@@ -2,7 +2,7 @@ import os
 import openai
 from bs4 import BeautifulSoup
 
-openai.organization = "org-PRFFzhFRzU9mXJc0aWuYVfgg"
+openai.organization = "org-PRFFzhFRzU9mXJc0aWuYVfgg" #replace me
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 recursion = 0
@@ -21,23 +21,25 @@ def run_agent(question):
     recursion += 1
 
     if recursion > 5:
-        query = f'''You are Credit Analyst GPT. Your job is to help your boss understand the answer
+        query = f'''You are Credit Analyst GPT. Your job is to help your user understand the answer
                 to whatever question is being asked. The question is: {question}. Here is your current progress
                 from previous runs: {progress}
-                Please answer the boss's question using as much of the progress from previous runs as possible.'''
+                Please answer the user's question using as much of the progress from previous runs as possible.'''
         result = query_llm(query)
 
-    query = f'''You are Credit Analyst GPT. Your job is to help your boss understand the answer
+    query = f'''You are Credit Analyst GPT. Your job is to help your user understand the answer
                 to whatever question is being asked. The question is: {question}. Here is your current progress
                 from previous runs: {progress}
-                Your job is the direct the continued progress towards answering the boss's question, and you have the following options
+                Your job is the direct the continued progress towards answering the user's question, and you have the following options
                 1. List up to 5 subtasks between html <li> </li> tags that need to be completed to advance towards the goal. These can include accessing data from
                 BAM's credit database (sentiment and investment indicators towards tickers), internet searches which retrieve websites
                 and their contents from Google, and price history API calls.
                 2. If the progress seems sufficient to answer the initial question write the tag <complete> and craft an answer to the
-                question in natural english that your boss will like.'''
+                question in natural english that your user will like.'''
     result = query_llm(query)
     if "<complete>" in result:
+        result.replace("<complete>", "")
+        memory.append(f"Goal Complete: {result}\n")
         return
 
     result = BeautifulSoup(result, 'html')
@@ -63,7 +65,7 @@ def execute_task(task):
 
     task_queue.remove(task)
 
-    query = f'''You are Credit Analyst GPT. Your job is to help your boss understand the answer
+    query = f'''You are Credit Analyst GPT. Your job is to help your user understand the answer
                 to whatever question is being asked. {memory[0]}
                 Another Credit Analyst GPT has already made a list of tasks to answer that question. Your task
                 is {task}.
@@ -77,9 +79,11 @@ def execute_task(task):
 
     result = query_llm(query)
     if "<BAM>" in result:
-        result = query_BAM(result.replace("<BAM>", ""))
+        result.replace("<BAM>", "")
+        result = query_BAM(result)
     elif "<GOOGLE>" in result:
-        result = query_GOOGLE(result.replace("<GOOGLE>", ""))
+        result.replace("<GOOGLE>", "")
+        result = query_GOOGLE(result)
     else:
         return #don't know what to do here
 
@@ -104,7 +108,9 @@ def query_BAM(query):
         type = "early_indicator"
     tickers = query[0].split(",")
 
-    pass
+    # insert api query
+
+    return str()
 
 def query_GOOGLE(query):
     pass
@@ -112,3 +118,4 @@ def query_GOOGLE(query):
 
 if __name__ == "__main__":
     run_agent()
+    print(memory)
